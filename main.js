@@ -1,39 +1,39 @@
-const textToSpeech = require('@google-cloud/text-to-speech');
-const fs = require('fs');
-const util = require('util');
-const Gclient = new textToSpeech.TextToSpeechClient();
+const textToSpeech = require('@google-cloud/text-to-speech')
+const fs = require('fs')
+const util = require('util')
+const Gclient = new textToSpeech.TextToSpeechClient()
 
-const Discord = require("discord.js");
-const client = new Discord.Client();
-const token = "your token";
+const Discord = require("discord.js")
+const client = new Discord.Client()
+const token = JSON.parse(fs.readFileSync('token.json','utf8')).token
 
-const crypto = require("crypto");
+const crypto = require("crypto")
 
-let connection;
+let connection
 
 client.on("ready", () => {
-    console.log("ready...");
-});
+    console.log("ready...")
+})
 
 client.on("message", message => {
     if (message.author.bot) {
-        return;
+        return
     } else {
-        let msg = message.content;
-        let channel = message.channel;
-        let author = message.author.username;
+        let msg = message.content
+        let channel = message.channel
+        let author = message.author.username
 
         if (message.mentions.has(client.user) && message.member.voice.channel) {
             message.member.voice.channel.join().then(c => {
                 connection = c
-                const dispatcher = connection.play("output.mp3");
+                const dispatcher = connection.play("output.mp3")
             })
-                .catch(console.log);
-            return;
+                .catch(console.log)
+            return
         }
     }
 }
-);
+)
 
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
     if (typeof connection.channel === 'undefined') return
@@ -41,25 +41,25 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
     if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
 
         // The text to synthesize
-        const dn = newMember.member.displayName;
+        const dn = newMember.member.displayName
         const request = {
             input: { text: dn },
             voice: { languageCode: 'en-US', ssmlGender: 'NEUTRAL' },
             audioConfig: { audioEncoding: 'MP3' },
-        };
+        }
 
-        const sha512 = crypto.createHash('sha512');
+        const sha512 = crypto.createHash('sha512')
         const hashobj = sha512.update(dn).digest('hex')
 
         try {
-            fs.statSync('./mp3/' + hashobj + '.mp3');
+            fs.statSync('./mp3/' + hashobj + '.mp3')
         } catch (error) {
             if (error.code === 'ENOENT') {
-                const [response] = await Gclient.synthesizeSpeech(request);
-                const writeFile = util.promisify(fs.writeFile);
-                await writeFile('./mp3/' + hashobj + '.mp3', response.audioContent, 'binary');
+                const [response] = await Gclient.synthesizeSpeech(request)
+                const writeFile = util.promisify(fs.writeFile)
+                await writeFile('./mp3/' + hashobj + '.mp3', response.audioContent, 'binary')
             } else {
-                console.log(error);
+                console.log(error)
             }
         }
         const dispatcher = connection.play('./mp3/' + hashobj + '.mp3')
@@ -70,9 +70,9 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
             else if ((oldMember.channelID === connection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== connection.channel.id)) {
                 connection.play("leaved.mp3")
             }
-        });
+        })
     }
 
 }
-);
-client.login(token);
+)
+client.login(token)
