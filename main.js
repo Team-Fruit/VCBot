@@ -37,7 +37,7 @@ client.on("message", message => {
 )
 
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
-    if (typeof connection.channel === 'undefined') return
+    // if (!connection.channel) return
 
     if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
 
@@ -45,7 +45,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         const dn = newMember.member.displayName
         const request = {
             input: { text: dn },
-            voice: { languageCode: 'en-US', ssmlGender: 'NEUTRAL' },
+            voice: { name: 'ja-JP-Standard-A', languageCode: 'ja-JP', ssmlGender: 'NEUTRAL' },
             audioConfig: { audioEncoding: 'MP3' },
         }
 
@@ -55,7 +55,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         try {
             fs.statSync('./mp3/' + hashobj + '.mp3')
         } catch (error) {
-            if (error.code === 'ENOENT') {
+            if (error.code == 'ENOENT') {
                 const [response] = await Gclient.synthesizeSpeech(request)
                 const writeFile = util.promisify(fs.writeFile)
                 await writeFile('./mp3/' + hashobj + '.mp3', response.audioContent, 'binary')
@@ -64,12 +64,14 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
             }
         }
         const dispatcher = connection.play('./mp3/' + hashobj + '.mp3')
-        dispatcher.on('end', reason => {
-            if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== connection.channel.id) && (newMember.channelID === connection.channel.id)) {
-                connection.play("joined.mp3")
-            }
-            else if ((oldMember.channelID === connection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== connection.channel.id)) {
-                connection.play("leaved.mp3")
+        dispatcher.on('speaking', value => {
+            if (!value) {
+                if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== connection.channel.id) && (newMember.channelID === connection.channel.id)) {
+                    connection.play("./joined.mp3")
+                }
+                else if ((oldMember.channelID === connection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== connection.channel.id)) {
+                    connection.play("./leaved.mp3")
+                }
             }
         })
     }
