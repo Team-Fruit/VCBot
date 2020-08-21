@@ -5,7 +5,7 @@ const Gclient = new textToSpeech.TextToSpeechClient()
 
 const Discord = require("discord.js")
 const client = new Discord.Client()
-const token = JSON.parse(fs.readFileSync('token.json','utf8')).token
+const token = JSON.parse(fs.readFileSync('token.json', 'utf8')).token
 
 const crypto = require("crypto")
 
@@ -27,6 +27,7 @@ client.on("message", message => {
             message.member.voice.channel.join().then(c => {
                 connection = c
                 const dispatcher = connection.play("output.mp3")
+                if (message.deletable) message.delete()
             })
                 .catch(console.log)
             return
