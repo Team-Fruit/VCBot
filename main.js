@@ -60,19 +60,19 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         } else {
           console.log(error)
         }
-      }
-      const dispatcher = connection.play('./mp3/' + hashobj + '.mp3')
-      dispatcher.on('speaking', value => {
-        if (!value) {
-          if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== connection.channel.id) && (newMember.channelID === connection.channel.id)) {
-            client.channels.cache.get("411153104986177536").send(dn.replace(/@/g, "＠") + " joined")
-            connection.play("./joined.mp3")
-          } else if ((oldMember.channelID === connection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== connection.channel.id)) {
-            client.channels.cache.get("411153104986177536").send(dn.replace(/@/g, "＠") + " leaved")
-            connection.play("./leaved.mp3")
-          }
-        }
-      })
+        const dispatcher = connection.play('./mp3/' + hashobj + '.mp3')
+        dispatcher.on('speaking', value => {
+            if (!value) {
+                if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== connection.channel.id) && (newMember.channelID === connection.channel.id)) {
+                    client.channels.cache.get("411153104986177536").send(dn.replace(/@/g, "＠") + " joined")
+                    connection.play("./joined.mp3")
+                }
+                else if ((oldMember.channelID === connection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== connection.channel.id)) {
+                    client.channels.cache.get("411153104986177536").send(dn.replace(/@/g, "＠") + " left")
+                    connection.play("./leaved.mp3")
+                }
+            }
+        })
     }
 
   }
