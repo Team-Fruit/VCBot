@@ -14,35 +14,35 @@ const client = new Discord.Client()
 const token = JSON.parse(fs.readFileSync('token.json', 'utf8')).token
 
 var replaceWords = {}
-try{
+try {
   //文字の読み替え一覧をjsonから読み込み
   replaceWords = JSON.parse(fs.readFileSync('replaceWords.json', 'utf8'))
-} catch(e) {
+} catch (e) {
   replaceWords = {}
 }
 
 
 //リストを表示するときに :を揃えたかった関数
-function spacePadding(val, len){
+function spacePadding(val, len) {
 
   //2バイト文字を検索
   m = val.match(/[^\x01-\x7E]/g,)
-  if(m){
+  if (m) {
     //文字数分余白を削除
     len = len - m.length
   }
-  for(var i = 0; i < len; i++){
-      val = val + " ";
+  for (var i = 0; i < len; i++) {
+    val = val + " ";
   }
 
-  return val.substr(0,len);
+  return val.substr(0, len);
 }
 
 // ```を入力されたときに書式が崩れないようにする関数
 function escapeDecorationSymbol(val) {
   if (val.match(/```/)) {
     //ゼロ幅スペースを入れる
-    val = val.replace(/```/g,'`​`​`​')
+    val = val.replace(/```/g, '`​`​`​')
   }
   return val;
 }
@@ -61,70 +61,72 @@ client.on("message", message => {
   }
 
   console.log(message.content)
-  if(message.content.startsWith("/vcbot")) {
-    const args = message.content.replace(/　+/g," ").slice(6).trim().split(/ +/)
-    switch(args[0]) {
-        case 'replace': 
-            //読み替える文字とその読みがあるかをチェック
-            if(!args[2]) {
-                //ないときは送信者を煽る
-                message.reply("なにいってんの？？？？？？？？？？？")
-                return
-            } else {
-              
-              if (replaceWords[args[1]]) {
-                //入力された文字がすでに登録されているとき
-                message.reply(args[1] + 'は重複していたので置き換えられました')
-                if (message.deletable) message.delete()
+  if (message.content.startsWith("/vcbot")) {
+    const args = message.content.replace(/　+/g, " ").slice(6).trim().split(/ +/)
+    switch (args[0]) {
+      case 'replace':
+      case 'r':
+        //読み替える文字とその読みがあるかをチェック
+        if (!args[2]) {
+          //ないときは送信者を煽る
+          message.reply("なにいってんの？？？？？？？？？？？")
+          return
+        } else {
 
-              } else {
+          if (replaceWords[args[1]]) {
+            //入力された文字がすでに登録されているとき
+            message.reply(args[1] + 'は重複していたので置き換えられました')
+            if (message.deletable) message.delete()
+
+          } else {
                 message.reply(args[1] + ": " + args[2] + " :pencil:")
                 if (message.deletable) message.delete()
-              }
-            //入力された文字と読みを登録(上書き)
-            replaceWords[args[1]] = args[2]
-            fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords));
-            break;
-            }
-        case 'delete':
-            if(!args[1]) {
-              //消去内容が指定されなかったとき
-              message.reply("無脳")
-            } else {
-              if(replaceWords[args[1]]) {
-                //消去する文字が登録されているとき
-                message.reply(args[1] + ": " + replaceWords[args[1]] + " :wave:")
-                if (message.deletable) message.delete()
-
-                //消去
-                delete replaceWords[args[1]]
-                fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords));
-              } else {
-                //登録されていなかったとき
-                message.reply(args[1] + "  :arrow_left: :face_with_monocle: :question:")
-                if (message.deletable) message.delete()
-              }
-            }
-            break;
-        case 'list':
-            let mesBody = ""
-            // リストの中身を組み立てる
-            for (i in replaceWords) {
-              mesBody = mesBody + "\n" + spacePadding(escapeDecorationSymbol(i), 10) + ": " + escapeDecorationSymbol(replaceWords[i])
-            }
-            // 無を吐き出さないためのif
-            if(mesBody) {
-              // フォントを変更する
-              mesBody = "```" + mesBody + "```"
-              message.reply(mesBody)
-              if (message.deletable) message.delete()
-            }
-            break;
-        default:
-          message.reply("？？？")
+          }
+          }
+          //入力された文字と読みを登録(上書き)
+          replaceWords[args[1]] = args[2]
+          fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords));
           break;
+        }
+      case 'delete':
+        if (!args[1]) {
+          //消去内容が指定されなかったとき
+          message.reply("無脳")
+        } else {
+          if (replaceWords[args[1]]) {
+            //消去する文字が登録されているとき
+            message.reply(args[1] + ": " + replaceWords[args[1]] + " :wave:")
+            if (message.deletable) message.delete()
+
+            //消去
+            delete replaceWords[args[1]]
+            fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords));
+          } else {
+            //登録されていなかったとき
+            message.reply(args[1] + "  :arrow_left: :face_with_monocle: :question:")
+            if (message.deletable) message.delete()
+          }
+        }
+        break;
+      case 'list':
+        let mesBody = ""
+        // リストの中身を組み立てる
+        for (i in replaceWords) {
+          mesBody = mesBody + "\n" + spacePadding(escapeDecorationSymbol(i), 10) + ": " + escapeDecorationSymbol(replaceWords[i])
+        }
+        // 無を吐き出さないためのif
+        if (mesBody) {
+          // フォントを変更する
+          mesBody = "```" + mesBody + "```"
+          message.reply(mesBody)
+          if (message.deletable) message.delete()
+        }
+        break;
+      default:
+        message.reply("？？？")
+        break;
     }
-}
+  }
   // メッセージにBotへのメンションを持ってる かつ 送信者がVCにいるとき
   if (message.mentions.has(client.user) && message.member.voice.channel) {
     // Botを接続させる
@@ -143,16 +145,16 @@ client.on("message", message => {
 // VCの状態が変更されたら発火
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
 
-  try{
+  try {
     // なんやらいろんな条件
     if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
 
       // DisplayName(ニックネームを取得)
       let dn = newMember.member.displayName
 
-      for(i in replaceWords) {
-        let re = new RegExp(i,'g')
-        dn = dn.replace(re,replaceWords[i])
+      for (i in replaceWords) {
+        let re = new RegExp(i, 'g')
+        dn = dn.replace(re, replaceWords[i])
       }
 
       // Google Text to Speechに渡すリクエストをあらかじめ生成
@@ -206,7 +208,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         }
       })
     }
-  } catch(e) {
+  } catch (e) {
   }
 })
 
