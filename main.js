@@ -21,10 +21,6 @@ try{
   replaceWords = {}
 }
 
-String.prototype.bytes = function () {
-  return(encodeURIComponent(this).replace(/%../g,"x").length);
-}
-
 //リストを表示するときに :を揃えたかった関数
 function spacePadding(val){
 
@@ -38,7 +34,8 @@ function spacePadding(val){
   if(m){
     //文字数分余白を削除
     for (i in m) {
-      if (i) len--
+      // console.log(m[i])
+      if (m[i]) console.log(m[i] + 'あ')
     }
   }
   for(var i = 0; i < 50; i++){
