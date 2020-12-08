@@ -38,7 +38,8 @@ function spacePadding(val) {
   if (m) {
     //文字数分余白を削除
     for (i in m) {
-      if (i) len--
+      // console.log(m[i])
+      if (m[i]) console.log(m[i] + 'あ')
     }
   }
   for (var i = 0; i < 50; i++) {
