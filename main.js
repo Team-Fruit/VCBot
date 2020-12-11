@@ -25,7 +25,7 @@ try {
 function spacePadding(val) {
 
   let len = 0
-  
+
   // 置換対象で一番長い文字列を検索
   // 置換対象リストから一つずつ検索
   for (i in replaceWords) {
@@ -113,7 +113,7 @@ client.on("message", message => {
               // 入力された文字がすでに登録されているとき
               message.reply(args[1] + 'は重複していたので置き換えられました')
               if (message.deletable) message.delete()
-              
+
             } else {
               message.reply(args[1] + ": " + args[2] + " :pencil:")
               if (message.deletable) message.delete()
@@ -161,7 +161,7 @@ client.on("message", message => {
         }
         break;
       default:
-        message.reply("add [対象] [読み方]: 読み替えを登録\ndelete [対象]: 読み替えを削除\nlist : 読み替えのリストを表示")
+        message.reply("\nadd [対象] [読み方]: 読み替えを登録\ndelete [対象]: 読み替えを削除\nlist : 読み替えのリストを表示")
         break;
     }
   }
@@ -183,72 +183,72 @@ client.on("message", message => {
 // VCの状態が変更されたら発火
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
 
-  try{
-  // なんやらいろんな条件
-  if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
+  try {
+    // なんやらいろんな条件
+    if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
 
-    // DisplayName(ニックネームを取得)
-    let dn = newMember.member.displayName
+      // DisplayName(ニックネームを取得)
+      let dn = newMember.member.displayName
 
-    console.log(newMember.member.displayName)
+      console.log(newMember.member.displayName)
 
-    for (i in replaceWords) {
-      let re = new RegExp(escape(i), 'g')
-      dn = dn.replace(re, replaceWords[i])
-    }
+      for (i in replaceWords) {
+        let re = new RegExp(escape(i), 'g')
+        dn = dn.replace(re, replaceWords[i])
+      }
 
-    // Google Text to Speechに渡すリクエストをあらかじめ生成
-    const request = {
-      input: { text: dn },
-      voice: { name: 'ja-JP-Standard-A', languageCode: 'ja-JP', ssmlGender: 'NEUTRAL' },
-      audioConfig: { audioEncoding: 'MP3' },
-    }
+      // Google Text to Speechに渡すリクエストをあらかじめ生成
+      const request = {
+        input: { text: dn },
+        voice: { name: 'ja-JP-Standard-A', languageCode: 'ja-JP', ssmlGender: 'NEUTRAL' },
+        audioConfig: { audioEncoding: 'MP3' },
+      }
 
-    // DisplayNameをハッシュする これ大丈夫なのか??
-    const sha512 = crypto.createHash('sha512')
-    const hashobj = sha512.update(dn).digest('hex')
+      // DisplayNameをハッシュする これ大丈夫なのか??
+      const sha512 = crypto.createHash('sha512')
+      const hashobj = sha512.update(dn).digest('hex')
 
-    try {
-      // ファイルがあるか確認
-      fs.statSync('./mp3/' + hashobj + '.mp3')
-    }
-    // ないとき
-    catch (error) {
+      try {
+        // ファイルがあるか確認
+        fs.statSync('./mp3/' + hashobj + '.mp3')
+      }
       // ないとき
-      if (error.code === 'ENOENT') {
-        // Googleに音声を作ってもらう
-        console.log("hei")
-        const [response] = await Gclient.synthesizeSpeech(request)
-        const writeFile = util.promisify(fs.writeFile)
-        // 保存
-        await writeFile('./mp3/' + hashobj + '.mp3', response.audioContent, 'binary')
-      } else {
-        //エラー
-        console.log(error)
+      catch (error) {
+        // ないとき
+        if (error.code === 'ENOENT') {
+          // Googleに音声を作ってもらう
+          console.log("hei")
+          const [response] = await Gclient.synthesizeSpeech(request)
+          const writeFile = util.promisify(fs.writeFile)
+          // 保存
+          await writeFile('./mp3/' + hashobj + '.mp3', response.audioContent, 'binary')
+        } else {
+          //エラー
+          console.log(error)
+        }
       }
-    }
 
-    //音声を再生
-    const dispatcher = connection.play('./mp3/' + hashobj + '.mp3')
-    // 再生が終わったら
-    dispatcher.on('speaking', value => {
-      if (!value) {
-        if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== connection.channel.id) && (newMember.channelID === connection.channel.id)) {
-          // ログを表示
-          client.channels.cache.get("411153104986177536").send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " joined")
-          // ジョインド
-          connection.play("./joined.mp3")
+      //音声を再生
+      const dispatcher = connection.play('./mp3/' + hashobj + '.mp3')
+      // 再生が終わったら
+      dispatcher.on('speaking', value => {
+        if (!value) {
+          if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== connection.channel.id) && (newMember.channelID === connection.channel.id)) {
+            // ログを表示
+            client.channels.cache.get("411153104986177536").send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " joined")
+            // ジョインド
+            connection.play("./joined.mp3")
+          }
+          else if ((oldMember.channelID === connection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== connection.channel.id)) {
+            // ログ
+            client.channels.cache.get("411153104986177536").send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " left")
+            // リーブド
+            connection.play("./leaved.mp3")
+          }
         }
-        else if ((oldMember.channelID === connection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== connection.channel.id)) {
-          // ログ
-          client.channels.cache.get("411153104986177536").send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " left")
-          // リーブド
-          connection.play("./leaved.mp3")
-        }
-      }
-    })
-  }
-  } catch(e) {
+      })
+    }
+  } catch (e) {
   }
 })
 
