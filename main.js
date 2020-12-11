@@ -24,25 +24,33 @@ try {
 //リストを表示するときに :を揃えたかった関数
 function spacePadding(val) {
 
-  let len = 20
-  // for(i in replaceWords) {
-  //   if(len < i.bytes()) len = i.bytes()
-  // }
-
-  //2バイト文字を検索
-  m = val.match(/[^\x01-\x7E]/g,)
-  if (m) {
-    //文字数分余白を削除
-    for (i in m) {
-      // console.log(m[i])
-      if (m[i]) console.log(m[i] + 'あ')
+  let len = 0
+  
+  // 置換対象で一番長い文字列を検索
+  // 置換対象リストから一つずつ検索
+  for (i in replaceWords) {
+    // それぞれのバイト数をtempLenに格納
+    let tempLen = i.length
+    for (ii in i) {
+      if (i[ii].match(/[^\x01-\x7E]/)) tempLen++
+    }
+    // 一番大きいバイト数を記録
+    if (len < tempLen) {
+      len = tempLen
     }
   }
+
+  console.log(len)
+
+  for (i in val) {
+    //2バイト文字を検索してそのぶん空白を削る
+    if (val[i].match(/[^\x01-\x7E]/g)) len--
+  }
+
   for (var i = 0; i < 50; i++) {
     val = val + " ";
   }
-
-  return val.slice(0, 20);
+  return val.substr(0, len);
 }
 
 // 装飾文字を出力するときに書式が崩れないようにする関数
@@ -66,6 +74,11 @@ function escape(val) {
   return val;
 }
 
+// JSON.stringifyから""を取るための関数
+function searchJSON(val) {
+  val = JSON.stringify(val).replace(/\"/g, "")
+  return val;
+}
 
 let connection
 
@@ -84,41 +97,47 @@ client.on("message", message => {
   if (message.content.startsWith("/vcbot")) {
     const args = message.content.replace(/　+/g, " ").slice(6).trim().split(/ +/)
     switch (args[0]) {
-      case 'replace':
-        //読み替える文字とその読みがあるかをチェック
+      case 'add':
+        // 読み替える文字とその読みがあるかをチェック
         if (!args[2]) {
-          //ないときは送信者を煽る
+          // ないときは送信者を煽る
           message.reply("なにいってんの？？？？？？？？？？？")
           return
         } else {
-
-          if (replaceWords[args[1]]) {
-            //入力された文字がすでに登録されているとき
-            message.reply(args[1] + 'は重複していたので置き換えられました')
+          // リストが崩れる・deleteコマンドで消せない原因になるので一部の記号をはじく
+          if (args[1].match(/([`\\\*])/g)) {
+            message.reply("` \\\ ' の記号はつかえません")
             if (message.deletable) message.delete()
-
           } else {
-            message.reply(args[1] + ": " + args[2] + " :pencil:")
-            if (message.deletable) message.delete()
+            if (replaceWords[args[1]]) {
+              // 入力された文字がすでに登録されているとき
+              message.reply(args[1] + 'は重複していたので置き換えられました')
+              if (message.deletable) message.delete()
+              
+            } else {
+              message.reply(args[1] + ": " + args[2] + " :pencil:")
+              if (message.deletable) message.delete()
+            }
           }
           //入力された文字と読みを登録(上書き)
-          replaceWords[args[1]] = args[2]
-          fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords));
+          replaceWords[searchJSON(args[1])] = args[2]
+          fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords, null, 2));
           break;
         }
       case 'delete':
         if (!args[1]) {
           //消去内容が指定されなかったとき
-          message.reply("無脳")
+          message.reply("消去内容を指定してください")
         } else {
-          if (replaceWords[args[1]]) {
+
+          if (replaceWords[searchJSON(args[1])]) {
             //消去する文字が登録されているとき
             message.reply(args[1] + ": " + replaceWords[args[1]] + " :wave:")
             if (message.deletable) message.delete()
 
             //消去
-            delete replaceWords[args[1]]
-            fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords));
+            delete replaceWords[searchJSON(args[1])]
+            fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords, null, 2));
           } else {
             //登録されていなかったとき
             message.reply(args[1] + "  :arrow_left: :face_with_monocle: :question:")
@@ -134,7 +153,7 @@ client.on("message", message => {
         }
         // 無を吐き出さないためのif
         if (mesBody) {
-          // フォントを変更する
+          // 書式を変更する
           mesBody = "```" + mesBody + "```"
           message.reply(mesBody)
           console.log(mesBody)
@@ -142,7 +161,7 @@ client.on("message", message => {
         }
         break;
       default:
-        message.reply("？？？")
+        message.reply("add [対象] [読み方]: 読み替えを登録\ndelete [対象]: 読み替えを削除\nlist : 読み替えのリストを表示")
         break;
     }
   }
@@ -164,7 +183,7 @@ client.on("message", message => {
 // VCの状態が変更されたら発火
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
 
-  // try{
+  try{
   // なんやらいろんな条件
   if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
 
@@ -229,8 +248,8 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
       }
     })
   }
-  // } catch(e) {
-  // }
+  } catch(e) {
+  }
 })
 
 // Botにログイン
