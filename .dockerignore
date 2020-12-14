@@ -1,0 +1,9 @@
+.git/
+.github
+.idea/
+.vscode/
+mp3/
+node_modules/
+Dockerfile
+docker-compose.yml
+token.json.template
