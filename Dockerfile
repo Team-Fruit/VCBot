@@ -1,13 +1,18 @@
-FROM node:lts
+FROM node:lts-alpine3.12
+
 WORKDIR /app
-COPY package-lock.json .
-COPY package.json .
-RUN npm i
-COPY main.js .
-COPY joined.mp3 .
-COPY leaved.mp3 .
-COPY output.mp3 .
-COPY token.json .
-COPY gtoken.json .
-RUN mkdir mp3
+
+RUN apk add --no-cache \
+    g++ \
+    gcc \
+    make \
+    python3
+
+COPY package.json package-lock.json ./
+
+RUN npm i \
+    mkdir mp3
+
+COPY . ./
+
 CMD ["node","main.js"]
