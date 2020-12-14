@@ -5,6 +5,7 @@ const util = require('util')
 const Discord = require("discord.js")
 const crypto = require("crypto")
 const { DH_NOT_SUITABLE_GENERATOR } = require('constants')
+const { slice } = require('ffmpeg-static')
 
 // いるやつ初期化
 const Gclient = new textToSpeech.TextToSpeechClient()
@@ -96,51 +97,63 @@ client.on("message", message => {
   console.log(message.content)
   if (message.content.startsWith("/vcbot")) {
     const args = message.content.replace(/　+/g, " ").slice(6).trim().split(/ +/)
+
+    var arrayLength = args.length
+    let inputWord = ''
+    try {
+      // argsの先頭を削除してそれ以外を連結して返す
+      inputWord = args.slice(1, arrayLength).join(' ')
+    } catch (e) {
+    }
+
     switch (args[0]) {
       case 'add':
+        // 末尾にある読みを削除(最後の-1は空白を消すため)
+        inputWord = inputWord.substr(0, inputWord.length - args[arrayLength - 1].length - 1)
+
         // 読み替える文字とその読みがあるかをチェック
-        if (!args[2]) {
+        if (arrayLength >= 3) {
+          // リストが崩れる・deleteコマンドで消せない原因になるので一部の記号をはじく
+          if (inputWord.match(/([`\\\*])/g)) {
+            message.reply("` \\\ ' の記号はつかえません")
+            if (message.deletable) message.delete()
+
+          } else {
+            if (replaceWords[inputWord]) {
+              // 入力された文字がすでに登録されているとき
+              message.reply(inputWord + 'は重複していたので置き換えられました')
+              if (message.deletable) message.delete()
+            } else {
+              message.reply(inputWord + ": " + args[arrayLength - 1] + " :pencil:")
+              if (message.deletable) message.delete()
+            }
+
+            //入力された文字と読みを登録(上書き)
+            replaceWords[searchJSON(inputWord)] = args[arrayLength - 1]
+            fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords, null, 2));
+          }
+          break;
+        } else {
           // ないときは送信者を煽る
           message.reply("なにいってんの？？？？？？？？？？？")
           return
-        } else {
-          // リストが崩れる・deleteコマンドで消せない原因になるので一部の記号をはじく
-          if (args[1].match(/([`\\\*])/g)) {
-            message.reply("` \\\ ' の記号はつかえません")
-            if (message.deletable) message.delete()
-          } else {
-            if (replaceWords[args[1]]) {
-              // 入力された文字がすでに登録されているとき
-              message.reply(args[1] + 'は重複していたので置き換えられました')
-              if (message.deletable) message.delete()
-
-            } else {
-              message.reply(args[1] + ": " + args[2] + " :pencil:")
-              if (message.deletable) message.delete()
-            }
-          }
-          //入力された文字と読みを登録(上書き)
-          replaceWords[searchJSON(args[1])] = args[2]
-          fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords, null, 2));
-          break;
         }
       case 'delete':
         if (!args[1]) {
           //消去内容が指定されなかったとき
           message.reply("消去内容を指定してください")
         } else {
-
-          if (replaceWords[searchJSON(args[1])]) {
+          if (replaceWords[searchJSON(inputWord)]) {
             //消去する文字が登録されているとき
-            message.reply(args[1] + ": " + replaceWords[args[1]] + " :wave:")
+            message.reply(inputWord + ": " + replaceWords[inputWord] + " :wave:")
             if (message.deletable) message.delete()
 
             //消去
-            delete replaceWords[searchJSON(args[1])]
+            delete replaceWords[searchJSON(inputWord)]
             fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords, null, 2));
           } else {
             //登録されていなかったとき
-            message.reply(args[1] + "  :arrow_left: :face_with_monocle: :question:")
+            message.reply(inputWord + "  :arrow_left: :face_with_monocle: :question:")
             if (message.deletable) message.delete()
           }
         }
@@ -156,7 +169,6 @@ client.on("message", message => {
           // 書式を変更する
           mesBody = "```" + mesBody + "```"
           message.reply(mesBody)
-          console.log(mesBody)
           if (message.deletable) message.delete()
         }
         break;
@@ -189,8 +201,6 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
 
       // DisplayName(ニックネームを取得)
       let dn = newMember.member.displayName
-
-      console.log(newMember.member.displayName)
 
       for (i in replaceWords) {
         let re = new RegExp(escape(i), 'g')
