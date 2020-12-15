@@ -6,7 +6,7 @@ const Discord = require("discord.js")
 const crypto = require("crypto")
 const { DH_NOT_SUITABLE_GENERATOR } = require('constants')
 const { slice } = require('ffmpeg-static')
-const { get, update} = require("./conf")
+const { getConf, updateConf} = require("./conf")
 const { createConnection } = require('net')
 
 // いるやつ初期化
@@ -18,7 +18,7 @@ const client = new Discord.Client()
 
 
 // トークンをconfigから読み込み
-const token = get("token")
+const token = getConf("token")
 
 var replaceWords = {}
 try {
@@ -151,12 +151,12 @@ client.on("message", message => {
                       case 'logChannelId':
                         const guild_logChannelId_help = "設定項目の説明:VCBotが居るボイスチャットチャンネルでのユーザーの出入りを記録するテキストチャットチャンネルをIDで指定します\n"
                         let prop_ctx = prop_contexts.join(".")
-                        if (!get(prop_ctx)) {
+                        if (!getConf(prop_ctx)) {
                           message.reply(guild_logChannelId_help + "この設定項目は設定されていません")
                           if (message.deletable) message.delete()
                         } else {
                           message.reply(guild_logChannelId_help + "この設定項目は以下のように設定されています\n" +
-                              get(prop_ctx))
+                              getConf(prop_ctx))
                           if (message.deletable) message.delete()
                         }
                         break;
@@ -194,9 +194,14 @@ client.on("message", message => {
                     prop_contexts[0] = "guilds." + message.guild.id
                     switch (prop_contexts[1]) {
                       case 'logChannelId':
+                        if (args.length < 4) {
+                          message.reply("設定内容が正しく入力されていません")
+                          if (message.deletable) message.delete()
+                          break;
+                        }
                         let prop_ctx = prop_contexts.join(".")
-                        update(prop_ctx, args[2])
-                        message.reply(prop_ctx + "を" + args[2] + "に設定しました")
+                        updateConf(prop_ctx, args[3])
+                        message.reply(prop_ctx + "を" + args[3] + "に設定しました")
                         if (message.deletable) message.delete()
 
                         break;
@@ -319,7 +324,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
 
   try {
     //VCに接続済み？
-    if (client.voice.connections.has()) {
+    if (client.voice.connections.some(c => c.channel.id === oldMember.channelID || c.channel.id === newMember.channelID)) {
       // なんやらいろんな条件
       // 1. ボットじゃない事
       // 2. 今までいたチャンネルか今入ったチャンネルのどちらかにVCBotがいる事
@@ -369,7 +374,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         }
 
         // Guildを跨いだ再生とロギング
-        for (const eachConnection of client.voice.connections.filter(targetConnection => (oldMember.connection && oldMember.connection === targetConnection) || (newMember.connection && newMember.connection === targetConnection))) {
+        for (const eachConnection of client.voice.connections.filter(targetConnection => oldMember.channelID === targetConnection.channel.id || newMember.channelID === targetConnection.channel.id).array()) {
           // 音声を再生
           const dispatcher = eachConnection.play('./mp3/' + hashobj + '.mp3')
           // 再生が終わったら
@@ -377,16 +382,16 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
             if (!value) {
               if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== eachConnection.channel.id) && (newMember.channelID === eachConnection.channel.id)) {
                 // ログを表示
-                if (get("guilds." + newMember.guild.id + ".logChannelId")){
-                  client.channels.cache.get(get("guild."+newMember.guild.id+".logChannelId")).send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " joined")
+                if (getConf("guilds." + newMember.guild.id + ".logChannelId")){
+                  client.channels.cache.get(getConf("guilds."+newMember.guild.id+".logChannelId")).send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " joined")
                 }
                 // ジョインド
                 eachConnection.play("./joined.mp3")
               }
               else if ((oldMember.channelID === eachConnection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== eachConnection.channel.id)) {
                 // ログ
-                if (get("guilds."+oldMember.guild.id+".logChannelId")){
-                  client.channels.cache.get(get("guild."+oldMember.guild.id+".logChannelId")).send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " left")
+                if (getConf("guilds."+oldMember.guild.id+".logChannelId")){
+                  client.channels.cache.get(getConf("guilds."+oldMember.guild.id+".logChannelId")).send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " left")
                 }
                 // リーブド(教訓。NEVER FIX THIS)
                 eachConnection.play("./leaved.mp3")
