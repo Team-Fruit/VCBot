@@ -4,10 +4,7 @@ const fs = require('fs')
 const util = require('util')
 const Discord = require("discord.js")
 const crypto = require("crypto")
-const { DH_NOT_SUITABLE_GENERATOR } = require('constants')
-const { slice } = require('ffmpeg-static')
 const { getConf, updateConf} = require("./conf")
-const { createConnection } = require('net')
 
 // いるやつ初期化
 const Gclient = new textToSpeech.TextToSpeechClient()
@@ -20,7 +17,7 @@ const client = new Discord.Client()
 // トークンをconfigから読み込み
 const token = getConf("token")
 
-var replaceWords = {}
+let replaceWords = {}
 try {
   //文字の読み替え一覧をjsonから読み込み
   replaceWords = JSON.parse(fs.readFileSync('replaceWords.json', 'utf8'))
@@ -54,7 +51,7 @@ function spacePadding(val) {
     if (val[i].match(/[^\x01-\x7E]/g)) len--
   }
 
-  for (var i = 0; i < 50; i++) {
+  for (let i = 0; i < 50; i++) {
     val = val + " ";
   }
   return val.substr(0, len);
@@ -104,7 +101,7 @@ client.on("message", message => {
   if (message.content.startsWith("/vcbot")) {
     const args = message.content.replace(/　+/g, " ").slice(6).trim().split(/ +/)
 
-    var arrayLength = args.length
+    const arrayLength = args.length
     let inputWord = ''
     try {
       // argsの先頭を削除してそれ以外を連結して返す
