@@ -8,3 +8,4 @@ replaceWords.json
 # config
 config/*
 !config/config.json.template
+.idea
