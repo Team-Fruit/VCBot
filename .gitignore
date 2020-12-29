@@ -4,3 +4,7 @@ node_modules/
 gtoken.json
 token.json
 replaceWords.json
+
+# config
+config/*
+!config/config.json.template

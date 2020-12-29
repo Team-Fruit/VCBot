@@ -4,17 +4,20 @@ const fs = require('fs')
 const util = require('util')
 const Discord = require("discord.js")
 const crypto = require("crypto")
-const { DH_NOT_SUITABLE_GENERATOR } = require('constants')
-const { slice } = require('ffmpeg-static')
+const { getConf, updateConf} = require("./conf")
 
 // いるやつ初期化
 const Gclient = new textToSpeech.TextToSpeechClient()
 const client = new Discord.Client()
 
-// トークンをjsonから読み込み
-const token = JSON.parse(fs.readFileSync('token.json', 'utf8')).token
+// config移行
 
-var replaceWords = {}
+
+
+// トークンをconfigから読み込み
+const token = getConf("token")
+
+let replaceWords = {}
 try {
   //文字の読み替え一覧をjsonから読み込み
   replaceWords = JSON.parse(fs.readFileSync('replaceWords.json', 'utf8'))
@@ -48,7 +51,7 @@ function spacePadding(val) {
     if (val[i].match(/[^\x01-\x7E]/g)) len--
   }
 
-  for (var i = 0; i < 50; i++) {
+  for (let i = 0; i < 50; i++) {
     val = val + " ";
   }
   return val.substr(0, len);
@@ -98,7 +101,7 @@ client.on("message", message => {
   if (message.content.startsWith("/vcbot")) {
     const args = message.content.replace(/　+/g, " ").slice(6).trim().split(/ +/)
 
-    var arrayLength = args.length
+    const arrayLength = args.length
     let inputWord = ''
     try {
       // argsの先頭を削除してそれ以外を連結して返す
@@ -107,6 +110,124 @@ client.on("message", message => {
     }
 
     switch (args[0]) {
+      case 'config':
+        if (args.length < 2) {
+          message.reply("VCBot 設定のヘルプ\n"+
+              "使い方: `/vcbot config サブコマンド ...`\n" +
+              "\n" +
+              "`/vcbot config`のコマンド及びサブコマンドの使用方法はそれ以降を何も書かずに実行することで参照可能です\n" +
+              "__サブコマンド一覧__ \n" +
+              "`view`: 設定内容を表示します\n" +
+              "`set` : 設定を更新します")
+          if (message.deletable) message.delete()
+          break;
+        } else {
+          switch (args[1]) {
+            case 'view':
+              if (args.length < 3) {
+                message.reply("使い方: `/vcbot config view 表示する設定項目`\n" +
+                "\n" +
+                "設定項目は`.`区切りでカテゴライズされています\n" +
+                "例: `/vcbot config view guild.logChannelId`\n" +
+                "\n" +
+                "次の設定項目・階層名が有効です: guild")
+                if (message.deletable) message.delete()
+              } else {
+                let prop_contexts = args[2].split(/\./)
+                // parse
+                switch (prop_contexts[0]) {
+                  case 'guild':
+                    if (prop_contexts.length < 2) {
+                      // help: guild
+                      message.reply("次の設定項目・階層名が有効です: `logChannelId`")
+                      if (message.deletable) message.delete()
+                      break;
+                    }
+                    prop_contexts[0] = "guilds." + message.guild.id
+                    switch (prop_contexts[1]) {
+                      case 'logChannelId':
+                        const guild_logChannelId_help = "設定項目の説明:VCBotが居るボイスチャットチャンネルでのユーザーの出入りを記録するテキストチャットチャンネルをIDで指定します\n"
+                        let prop_ctx = prop_contexts.join(".")
+                        if (!getConf(prop_ctx)) {
+                          message.reply(guild_logChannelId_help + "この設定項目は設定されていません")
+                          if (message.deletable) message.delete()
+                        } else {
+                          message.reply(guild_logChannelId_help + "この設定項目は以下のように設定されています\n" +
+                              getConf(prop_ctx))
+                          if (message.deletable) message.delete()
+                        }
+                        break;
+                      default:
+                        message.reply("入力されたコンテキストが正しくありません: 有効な設定項目、階層名ではありません")
+                        if (message.deletable) message.delete()
+                        break;  
+                    }
+                    break;
+                  default:
+                    message.reply("入力されたコンテキストが正しくありません: 有効な設定項目、階層名ではありません")
+                    if (message.deletable) message.delete()
+                    break;
+                }
+              }
+              break;
+            case 'set':
+              if (args.length < 3) {
+                message.reply("使い方: `/vcbot config set 設定する設定項目 設定`\n" +
+                "\n" +
+                "設定項目は`.`区切りでカテゴライズされています\n" +
+                "例: `/vcbot config set guild.logChannelId 314045904778952708`")
+                if (message.deletable) message.delete()
+                break;
+              } else if (args.length >= 3) {
+                let prop_contexts = args[2].split(/\./)
+                // parse
+                switch (prop_contexts[0]) {
+                  case 'guild':
+                    if (prop_contexts.length < 2) {
+                      message.reply("入力されたコンテキストが正しくありません: 設定項目ではありません")
+                      if (message.deletable) message.delete()
+                      break;
+                    }
+                    prop_contexts[0] = "guilds." + message.guild.id
+                    switch (prop_contexts[1]) {
+                      case 'logChannelId':
+                        if (args.length < 4) {
+                          message.reply("設定内容が正しく入力されていません")
+                          if (message.deletable) message.delete()
+                          break;
+                        }
+                        let prop_ctx = prop_contexts.join(".")
+                        updateConf(prop_ctx, args[3])
+                        message.reply(prop_ctx + "を" + args[3] + "に設定しました")
+                        if (message.deletable) message.delete()
+
+                        break;
+                      default:
+                        message.reply("入力されたコンテキストが正しくありません: 有効な設定項目、階層名ではありません")
+                        if (message.deletable) message.delete()
+                        break;  
+                    }
+                    break;
+                  default:
+                    message.reply("入力されたコンテキストが正しくありません: 有効な設定項目、階層名ではありません")
+                    if (message.deletable) message.delete()
+                    break;
+                }
+              }
+              break;
+            default:
+              message.reply("そのようなサブコマンドはありません\n"+
+              "使い方: `/vcbot config サブコマンド ...`\n" +
+              "\n" +
+              "`/vcbot config`のコマンド及びサブコマンドの使用方法はそれ以降を何も書かずに実行することで参照可能です\n" +
+              "__サブコマンド一覧__ \n" +
+              "`view`: 設定内容を表示します\n" +
+              "`set` : 設定を更新します")
+              if (message.deletable) message.delete()
+              break;
+          }
+        }
+        break;
       case 'add':
         // 末尾にある読みを削除(最後の-1は空白を消すため)
         inputWord = inputWord.substr(0, inputWord.length - args[arrayLength - 1].length - 1)
@@ -132,12 +253,11 @@ client.on("message", message => {
             replaceWords[searchJSON(inputWord)] = args[arrayLength - 1]
             fs.writeFileSync('replaceWords.json', JSON.stringify(replaceWords, null, 2));
           }
-          break;
         } else {
           // ないときは送信者を煽る
           message.reply("なにいってんの？？？？？？？？？？？")
-          return
         }
+        break;
       case 'delete':
         if (!args[1]) {
           //消去内容が指定されなかったとき
@@ -173,7 +293,11 @@ client.on("message", message => {
         }
         break;
       default:
-        message.reply("\nadd [対象] [読み方]: 読み替えを登録\ndelete [対象]: 読み替えを削除\nlist : 読み替えのリストを表示")
+        message.reply("\n" +
+            "config: 設定\n" +
+            "add [対象] [読み方]: 読み替えを登録\n" +
+            "delete [対象]: 読み替えを削除\n" +
+            "list : 読み替えのリストを表示")
         break;
     }
   }
@@ -196,67 +320,83 @@ client.on("message", message => {
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
 
   try {
-    // なんやらいろんな条件
-    if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
+    //VCに接続済み？
+    if (client.voice.connections.some(c => c.channel.id === oldMember.channelID || c.channel.id === newMember.channelID)) {
+      // なんやらいろんな条件
+      // 1. ボットじゃない事
+      // 2. 今までいたチャンネルか今入ったチャンネルのどちらかにVCBotがいる事
+      // 3. 同じチャンネルに出入りしていない事
+      if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
 
-      // DisplayName(ニックネームを取得)
-      let dn = newMember.member.displayName
+        // DisplayName(ニックネームを取得)
+        let dn = newMember.member.displayName
 
-      for (i in replaceWords) {
-        let re = new RegExp(escape(i), 'g')
-        dn = dn.replace(re, replaceWords[i])
-      }
-
-      // Google Text to Speechに渡すリクエストをあらかじめ生成
-      const request = {
-        input: { text: dn },
-        voice: { name: 'ja-JP-Standard-A', languageCode: 'ja-JP', ssmlGender: 'NEUTRAL' },
-        audioConfig: { audioEncoding: 'MP3' },
-      }
-
-      // DisplayNameをハッシュする これ大丈夫なのか??
-      const sha512 = crypto.createHash('sha512')
-      const hashobj = sha512.update(dn).digest('hex')
-
-      try {
-        // ファイルがあるか確認
-        fs.statSync('./mp3/' + hashobj + '.mp3')
-      }
-      // ないとき
-      catch (error) {
-        // ないとき
-        if (error.code === 'ENOENT') {
-          // Googleに音声を作ってもらう
-          console.log("hei")
-          const [response] = await Gclient.synthesizeSpeech(request)
-          const writeFile = util.promisify(fs.writeFile)
-          // 保存
-          await writeFile('./mp3/' + hashobj + '.mp3', response.audioContent, 'binary')
-        } else {
-          //エラー
-          console.log(error)
+        //読み替え適用
+        for (i in replaceWords) {
+          let re = new RegExp(escape(i), 'g')
+          dn = dn.replace(re, replaceWords[i])
         }
-      }
 
-      //音声を再生
-      const dispatcher = connection.play('./mp3/' + hashobj + '.mp3')
-      // 再生が終わったら
-      dispatcher.on('speaking', value => {
-        if (!value) {
-          if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== connection.channel.id) && (newMember.channelID === connection.channel.id)) {
-            // ログを表示
-            client.channels.cache.get("411153104986177536").send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " joined")
-            // ジョインド
-            connection.play("./joined.mp3")
-          }
-          else if ((oldMember.channelID === connection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== connection.channel.id)) {
-            // ログ
-            client.channels.cache.get("411153104986177536").send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " left")
-            // リーブド
-            connection.play("./leaved.mp3")
+        // Google Text to Speechに渡すリクエストをあらかじめ生成
+        const request = {
+          input: { text: dn },
+          voice: { name: 'ja-JP-Standard-A', languageCode: 'ja-JP', ssmlGender: 'NEUTRAL' },
+          audioConfig: { audioEncoding: 'MP3' },
+        }
+
+        // DisplayNameをハッシュする これ大丈夫なのか??
+        const sha512 = crypto.createHash('sha512')
+        const hashobj = sha512.update(dn).digest('hex')
+
+        try {
+          // ファイルがあるか確認
+          fs.statSync('./mp3/' + hashobj + '.mp3')
+        }
+        // 「ダメです！」なとき
+        catch (error) {
+          // ないとき
+          if (error.code === 'ENOENT') {
+            // Googleに音声を作ってもらう
+            console.log("hei")
+            const [response] = await Gclient.synthesizeSpeech(request)
+            const writeFile = util.promisify(fs.writeFile)
+            // 保存
+            await writeFile('./mp3/' + hashobj + '.mp3', response.audioContent, 'binary')
+          } 
+          // それ以外
+          else {
+            //エラー
+            console.log(error)
           }
         }
-      })
+
+        // Guildを跨いだ再生とロギング
+        for (const eachConnection of client.voice.connections.filter(targetConnection => oldMember.channelID === targetConnection.channel.id || newMember.channelID === targetConnection.channel.id).array()) {
+          // 音声を再生
+          const dispatcher = eachConnection.play('./mp3/' + hashobj + '.mp3')
+          // 再生が終わったら
+          dispatcher.on('speaking', value => {
+            if (!value) {
+              if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== eachConnection.channel.id) && (newMember.channelID === eachConnection.channel.id)) {
+                // ログを表示
+                if (getConf("guilds." + newMember.guild.id + ".logChannelId")){
+                  client.channels.cache.get(getConf("guilds."+newMember.guild.id+".logChannelId")).send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " joined")
+                }
+                // ジョインド
+                eachConnection.play("./joined.mp3")
+              }
+              else if ((oldMember.channelID === eachConnection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== eachConnection.channel.id)) {
+                // ログ
+                if (getConf("guilds."+oldMember.guild.id+".logChannelId")){
+                  client.channels.cache.get(getConf("guilds."+oldMember.guild.id+".logChannelId")).send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " left")
+                }
+                // リーブド(教訓。NEVER FIX THIS)
+                eachConnection.play("./leaved.mp3")
+              }
+            }
+          })
+        }
+      }
     }
   } catch (e) {
   }
