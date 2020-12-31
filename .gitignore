@@ -4,6 +4,7 @@ node_modules/
 gtoken.json
 token.json
 replaceWords.json
+built/
 
 # config
 config/*

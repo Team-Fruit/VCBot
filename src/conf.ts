@@ -1,9 +1,9 @@
-const fs = require('fs')
+import { readFileSync, writeFileSync } from 'fs';
 
 // Configヨミヨミ
-let conf = JSON.parse(fs.readFileSync('./config/config.json', 'utf8'))
+let conf = JSON.parse(readFileSync('./config/config.json', 'utf8'))
 
-function getConf(prop_name) {
+export function getConf(prop_name) {
     let prop_domain = prop_name.split(".")
     let prop_entry = conf;
     for (let i = 0; i < prop_domain.length;i++) {
@@ -13,7 +13,7 @@ function getConf(prop_name) {
     return prop_entry
 }
 
-function updateConf(prop_name, data, index) {
+export function updateConf(prop_name, data, index) {
     if (!index) index = 1
     let prop_domain = prop_name.split(".")
     let prop_entry = conf;
@@ -24,10 +24,8 @@ function updateConf(prop_name, data, index) {
     prop_entry[prop_domain[prop_domain.length - index]] = data
     if (index == prop_domain.length) {
         conf = prop_entry
-        fs.writeFileSync("./config/config.json", JSON.stringify(conf, null, "\t"))
+        writeFileSync("./config/config.json", JSON.stringify(conf, null, "\t"))
     } else {
         updateConf(prop_name, prop_entry, ++index)
     }
 }
-
-module.exports = {getConf, updateConf}
