@@ -29,6 +29,8 @@ try {
 function spacePadding(val) {
 
   let len = 0
+  let i
+  let ii
 
   // 置換対象で一番長い文字列を検索
   // 置換対象リストから一つずつ検索
@@ -36,6 +38,7 @@ function spacePadding(val) {
     // それぞれのバイト数をtempLenに格納
     let tempLen = i.length
     for (ii in i) {
+      // eslint-disable-next-line no-control-regex
       if (i[ii].match(/[^\x01-\x7E]/)) tempLen++
     }
     // 一番大きいバイト数を記録
@@ -48,6 +51,7 @@ function spacePadding(val) {
 
   for (i in val) {
     //2バイト文字を検索してそのぶん空白を削る
+    // eslint-disable-next-line no-control-regex
     if (val[i].match(/[^\x01-\x7E]/g)) len--
   }
 
@@ -57,11 +61,14 @@ function spacePadding(val) {
   return val.substr(0, len);
 }
 
+let re
 // 装飾文字を出力するときに書式が崩れないようにする関数
 function escapeDecorationSymbol(val) {
+  // eslint-disable-next-line
   re = new RegExp(/([\*_~`\|/])/g)
 
   //装飾文字があったときはゼロ幅スペースを入れる
+  // eslint-disable-next-line
   // if (val.match(re)) val = val.replace(re,"\\$1​")
   if (val.match(re)) val = val.replace(re, "​$1")
 
@@ -70,6 +77,7 @@ function escapeDecorationSymbol(val) {
 
 // 正規表現の記号をよけるための関数
 function escape(val) {
+  // eslint-disable-next-line
   re = new RegExp(/([\*\|\^\.\+\?\|\\\[\]\(\)\{\}])/g)
 
   //記号があったときはバックスラッシュを入れる
@@ -80,6 +88,7 @@ function escape(val) {
 
 // JSON.stringifyから""を取るための関数
 function searchJSON(val) {
+  // eslint-disable-next-line
   val = JSON.stringify(val).replace(/\"/g, "")
   return val;
 }
@@ -99,6 +108,7 @@ client.on("message", message => {
 
   console.log(message.content)
   if (message.content.startsWith("/vcbot")) {
+    // eslint-disable-next-line
     const args = message.content.replace(/　+/g, " ").slice(6).trim().split(/ +/)
 
     const arrayLength = args.length
@@ -107,6 +117,7 @@ client.on("message", message => {
       // argsの先頭を削除してそれ以外を連結して返す
       inputWord = args.slice(1, arrayLength).join(' ')
     } catch (e) {
+      console.log(e)
     }
 
     switch (args[0]) {
@@ -146,7 +157,9 @@ client.on("message", message => {
                     prop_contexts[0] = "guilds." + message.guild.id
                     switch (prop_contexts[1]) {
                       case 'logChannelId':
+                        // eslint-disable-next-line no-case-declarations
                         const guild_logChannelId_help = "設定項目の説明:VCBotが居るボイスチャットチャンネルでのユーザーの出入りを記録するテキストチャットチャンネルをIDで指定します\n"
+                        // eslint-disable-next-line no-case-declarations
                         let prop_ctx = prop_contexts.join(".")
                         if (!getConf(prop_ctx)) {
                           message.reply(guild_logChannelId_help + "この設定項目は設定されていません")
@@ -196,6 +209,7 @@ client.on("message", message => {
                           if (message.deletable) message.delete()
                           break;
                         }
+                        // eslint-disable-next-line no-case-declarations
                         let prop_ctx = prop_contexts.join(".")
                         updateConf(prop_ctx, args[3])
                         message.reply(prop_ctx + "を" + args[3] + "に設定しました")
@@ -235,7 +249,9 @@ client.on("message", message => {
         // 読み替える文字とその読みがあるかをチェック
         if (arrayLength >= 3) {
           // リストが崩れる・deleteコマンドで消せない原因になるので一部の記号をはじく
+          // eslint-disable-next-line
           if (inputWord.match(/([`\\\*])/g)) {
+            // eslint-disable-next-line
             message.reply("` \\\ ' の記号はつかえません")
             if (message.deletable) message.delete()
 
@@ -279,7 +295,10 @@ client.on("message", message => {
         }
         break;
       case 'list':
-        let mesBody = ""
+        // eslint-disable-next-line
+        let mesBody;
+        // eslint-disable-next-line
+        let i
         // リストの中身を組み立てる
         for (i in replaceWords) {
           mesBody = mesBody + "\n" + spacePadding(escapeDecorationSymbol(i), 10) + ": " + escapeDecorationSymbol(replaceWords[i])
@@ -307,6 +326,7 @@ client.on("message", message => {
     message.member.voice.channel.join().then(c => {
       connection = c
       // 再生
+      // eslint-disable-next-line
       const dispatcher = connection.play("output.mp3")
       // メッセージを消す権限があるときに消す
       if (message.deletable) message.delete()
@@ -332,7 +352,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         let dn = newMember.member.displayName
 
         //読み替え適用
-        for (i in replaceWords) {
+        for (let i in replaceWords) {
           let re = new RegExp(escape(i), 'g')
           dn = dn.replace(re, replaceWords[i])
         }
@@ -399,6 +419,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
       }
     }
   } catch (e) {
+    console.log(e)
   }
 })
 
