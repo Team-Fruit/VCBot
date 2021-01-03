@@ -494,7 +494,7 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
                   );
                 }
                 // ジョインド
-                eachConnection.play("./joined.mp3");
+                eachConnection.play("../joined.mp3");
               } else if (
                 oldMember.channelID === eachConnection.channel.id &&
                 (newMember.channelID === null ||
@@ -513,8 +513,9 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
                     ).replace(/@/g, "＠") + " left"
                   );
                 }
+                // ToDo: leavedをleftになおす
                 // リーブド(教訓。NEVER FIX THIS)
-                eachConnection.play("./leaved.mp3");
+                eachConnection.play("../leaved.mp3");
               }
             }
           });
