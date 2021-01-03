@@ -3,7 +3,7 @@ import textToSpeech from "@google-cloud/text-to-speech";
 import { readFileSync, writeFile, writeFileSync, statSync } from "fs";
 import { promisify } from "util";
 import { createHash } from "crypto";
-import { Channel, Client, TextChannel } from "discord.js";
+import { Client, TextChannel } from "discord.js";
 import { getConf, updateConf } from "./conf";
 
 // いるやつ初期化
