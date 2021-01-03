@@ -421,7 +421,7 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
         }
 
         // Google Text to Speechに渡すリクエストをあらかじめ生成
-        const request = {
+        const request: any = {
           input: { text: dn },
           voice: {
             name: "ja-JP-Standard-A",
@@ -444,7 +444,6 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
           if (error.code === "ENOENT") {
             // Googleに音声を作ってもらう
             console.log("hei");
-            // @ts-ignore
             const [response] = await Gclient.synthesizeSpeech(request);
             // ToDo: writeFilesいい感じにして
             const writeFiles = promisify(writeFile);
