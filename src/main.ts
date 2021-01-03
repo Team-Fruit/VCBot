@@ -3,7 +3,7 @@ import textToSpeech from '@google-cloud/text-to-speech';
 import { readFileSync, writeFile, writeFileSync, statSync } from 'fs';
 import { promisify } from 'util';
 import { createHash } from "crypto";
-import { Client } from "discord.js";
+import {Channel, Client, TextChannel} from "discord.js";
 import { getConf, updateConf } from "./conf";
 
 // いるやつ初期化
@@ -17,7 +17,7 @@ const client = new Client()
 // トークンをconfigから読み込み
 const token = getConf("token")
 
-let replaceWords = {}
+let replaceWords: any = {}
 try {
   //文字の読み替え一覧をjsonから読み込み
   replaceWords = JSON.parse(readFileSync('replaceWords.json', 'utf8'))
@@ -26,17 +26,17 @@ try {
 }
 
 //リストを表示するときに :を揃えたかった関数
-function spacePadding(val) {
+function spacePadding(val :any) {
 
-  let len = 0
-  let i
-  let ii
+  let len :number = 0
+  let i : any = ""
+  let ii : any = ""
 
   // 置換対象で一番長い文字列を検索
   // 置換対象リストから一つずつ検索
   for (i in replaceWords) {
     // それぞれのバイト数をtempLenに格納
-    let tempLen = i.length
+    let tempLen :any = i.length
     for (ii in i) {
       // eslint-disable-next-line no-control-regex
       if (i[ii].match(/[^\x01-\x7E]/)) tempLen++
@@ -63,7 +63,7 @@ function spacePadding(val) {
 
 let re
 // 装飾文字を出力するときに書式が崩れないようにする関数
-function escapeDecorationSymbol(val) {
+function escapeDecorationSymbol(val : any) {
   // eslint-disable-next-line
   re = new RegExp(/([\*_~`\|/])/g)
 
@@ -76,7 +76,7 @@ function escapeDecorationSymbol(val) {
 }
 
 // 正規表現の記号をよけるための関数
-function escape(val) {
+function escape(val :any) {
   // eslint-disable-next-line
   re = new RegExp(/([\*\|\^\.\+\?\|\\\[\]\(\)\{\}])/g)
 
@@ -87,13 +87,13 @@ function escape(val) {
 }
 
 // JSON.stringifyから""を取るための関数
-function searchJSON(val) {
+function searchJSON(val : any) {
   // eslint-disable-next-line
   val = JSON.stringify(val).replace(/\"/g, "")
   return val;
 }
 
-let connection
+let connection : any
 
 // Discord Botの準備ができたら発火
 client.on("ready", () => {
@@ -154,7 +154,7 @@ client.on("message", message => {
                       if (message.deletable) message.delete()
                       break;
                     }
-                    prop_contexts[0] = "guilds." + message.guild.id
+                    prop_contexts[0] = "guilds." + message.guild!.id
                     switch (prop_contexts[1]) {
                       case 'logChannelId':
                         // eslint-disable-next-line no-case-declarations
@@ -201,7 +201,7 @@ client.on("message", message => {
                       if (message.deletable) message.delete()
                       break;
                     }
-                    prop_contexts[0] = "guilds." + message.guild.id
+                    prop_contexts[0] = "guilds." + message.guild!.id
                     switch (prop_contexts[1]) {
                       case 'logChannelId':
                         if (args.length < 4) {
@@ -301,7 +301,7 @@ client.on("message", message => {
         let i
         // リストの中身を組み立てる
         for (i in replaceWords) {
-          mesBody = mesBody + "\n" + spacePadding(escapeDecorationSymbol(i), 10) + ": " + escapeDecorationSymbol(replaceWords[i])
+          mesBody = mesBody + "\n" + spacePadding(escapeDecorationSymbol(i)) + ": " + escapeDecorationSymbol(replaceWords[i])
         }
         // 無を吐き出さないためのif
         if (mesBody) {
@@ -321,9 +321,9 @@ client.on("message", message => {
     }
   }
   // メッセージにBotへのメンションを持ってる かつ 送信者がVCにいるとき
-  if (message.mentions.has(client.user) && message.member.voice.channel) {
+  if (message.mentions.has(client.user!) && message.member!.voice.channel) {
     // Botを接続させる
-    message.member.voice.channel.join().then(c => {
+    message.member!.voice.channel.join().then(c => {
       connection = c
       // 再生
       // eslint-disable-next-line
@@ -341,15 +341,15 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
 
   try {
     //VCに接続済み？
-    if (client.voice.connections.some(c => c.channel.id === oldMember.channelID || c.channel.id === newMember.channelID)) {
+    if (client.voice!.connections.some(c => c.channel.id === oldMember.channelID || c.channel.id === newMember.channelID)) {
       // なんやらいろんな条件
       // 1. ボットじゃない事
       // 2. 今までいたチャンネルか今入ったチャンネルのどちらかにVCBotがいる事
       // 3. 同じチャンネルに出入りしていない事
-      if (!newMember.member.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
+      if (!newMember.member!.user.bot && !(newMember.channelID !== connection.channel.id && oldMember.channelID !== connection.channel.id) && newMember.channelID !== oldMember.channelID) {
 
         // DisplayName(ニックネームを取得)
-        let dn = newMember.member.displayName
+        let dn = newMember.member!.displayName
 
         //読み替え適用
         for (let i in replaceWords) {
@@ -378,12 +378,13 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
           if (error.code === 'ENOENT') {
             // Googleに音声を作ってもらう
             console.log("hei")
+            // @ts-ignore
             const [response] = await Gclient.synthesizeSpeech(request)
             // ToDo: writeFilesいい感じにして
             const writeFiles = promisify(writeFile)
             // 保存
             // ToDo: writeFilesいい感じにして
-            await writeFiles('./mp3/' + hashobj + '.mp3', response.audioContent, 'binary')
+            await writeFiles('./mp3/' + hashobj + '.mp3', response.audioContent!, 'binary')
           }
           // それ以外
           else {
@@ -393,7 +394,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         }
 
         // Guildを跨いだ再生とロギング
-        for (const eachConnection of client.voice.connections.filter(targetConnection => oldMember.channelID === targetConnection.channel.id || newMember.channelID === targetConnection.channel.id).array()) {
+        for (const eachConnection of client.voice!.connections.filter(targetConnection => oldMember.channelID === targetConnection.channel.id || newMember.channelID === targetConnection.channel.id).array()) {
           // 音声を再生
           const dispatcher = eachConnection.play('./mp3/' + hashobj + '.mp3')
           // 再生が終わったら
@@ -402,7 +403,9 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
               if ((oldMember.channelID === null || typeof oldMember.channelID === 'undefined' || oldMember.channelID !== eachConnection.channel.id) && (newMember.channelID === eachConnection.channel.id)) {
                 // ログを表示
                 if (getConf("guilds." + newMember.guild.id + ".logChannelId")){
-                  client.channels.cache.get(getConf("guilds."+newMember.guild.id+".logChannelId")).send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " joined")
+                  (<TextChannel>client.channels.cache
+                      .get(getConf("guilds."+newMember.guild.id+".logChannelId")))
+                      .send(escapeDecorationSymbol(newMember.member!.displayName).replace(/@/g, "＠") + " joined")
                 }
                 // ジョインド
                 eachConnection.play("./joined.mp3")
@@ -410,7 +413,9 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
               else if ((oldMember.channelID === eachConnection.channel.id) && (newMember.channelID === null || typeof newMember.channelID === 'undefined' || newMember.channelID !== eachConnection.channel.id)) {
                 // ログ
                 if (getConf("guilds."+oldMember.guild.id+".logChannelId")){
-                  client.channels.cache.get(getConf("guilds."+oldMember.guild.id+".logChannelId")).send(escapeDecorationSymbol(newMember.member.displayName).replace(/@/g, "＠") + " left")
+                  (<TextChannel>client.channels.cache
+                      .get(getConf("guilds."+oldMember.guild.id+".logChannelId")))
+                      .send(escapeDecorationSymbol(newMember.member!.displayName).replace(/@/g, "＠") + " left")
                 }
                 // リーブド(教訓。NEVER FIX THIS)
                 eachConnection.play("./leaved.mp3")

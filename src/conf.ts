@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'fs';
 // Configヨミヨミ
 let conf = JSON.parse(readFileSync('./config/config.json', 'utf8'))
 
-export function getConf(prop_name) {
+export function getConf(prop_name : any) {
     let prop_domain = prop_name.split(".")
     let prop_entry = conf;
     for (let i = 0; i < prop_domain.length;i++) {
@@ -13,8 +13,8 @@ export function getConf(prop_name) {
     return prop_entry
 }
 
-export function updateConf(prop_name, data, index) {
-    if (!index) index = 1
+export function updateConf(prop_name :any, data: any, index: any = 1) {
+    // if (!index) index = 1
     let prop_domain = prop_name.split(".")
     let prop_entry = conf;
     for (let i = 0; i < prop_domain.length - index;i++) {
