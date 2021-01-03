@@ -4,10 +4,9 @@ node_modules/
 gtoken.json
 token.json
 replaceWords.json
-built/
+build/
 
 # config
 config/*
 !config/config.json.template
 .idea
-build
