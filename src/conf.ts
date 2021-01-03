@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "fs";
 
 // Configヨミヨミ
-let conf = JSON.parse(readFileSync("../config/config.json", "utf8"));
+let conf = JSON.parse(readFileSync("./config/config.json", "utf8"));
 
 export function getConf(prop_name: any) {
   let prop_domain = prop_name.split(".");
@@ -24,7 +24,7 @@ export function updateConf(prop_name: any, data: any, index: any = 1) {
   prop_entry[prop_domain[prop_domain.length - index]] = data;
   if (index == prop_domain.length) {
     conf = prop_entry;
-    writeFileSync("../config/config.json", JSON.stringify(conf, null, "\t"));
+    writeFileSync("./config/config.json", JSON.stringify(conf, null, "\t"));
   } else {
     updateConf(prop_name, prop_entry, ++index);
   }
