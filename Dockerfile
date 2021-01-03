@@ -18,4 +18,4 @@ COPY . ./
 
 RUN apk del .node-gyp
 
-CMD ["node","build","main.js"]
+CMD ["node","build/main.js"]
