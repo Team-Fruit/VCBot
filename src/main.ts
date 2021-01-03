@@ -437,7 +437,7 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
 
         try {
           // ファイルがあるか確認
-          statSync("./mp3/" + hashobj + ".mp3");
+          statSync("../mp3/" + hashobj + ".mp3");
         } catch (error) {
           // 「ダメです！」なとき
           // ないとき
@@ -451,7 +451,7 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
             // 保存
             // ToDo: writeFilesいい感じにして
             await writeFiles(
-              "./mp3/" + hashobj + ".mp3",
+              "../mp3/" + hashobj + ".mp3",
               response.audioContent!,
               "binary"
             );
@@ -472,7 +472,7 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
           )
           .array()) {
           // 音声を再生
-          const dispatcher = eachConnection.play("./mp3/" + hashobj + ".mp3");
+          const dispatcher = eachConnection.play("../mp3/" + hashobj + ".mp3");
           // 再生が終わったら
           dispatcher.on("speaking", (value) => {
             if (!value) {
