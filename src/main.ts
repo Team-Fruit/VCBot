@@ -1,5 +1,5 @@
 // ライブラリ読み込み
-import textToSpeech from "@google-cloud/text-to-speech";
+import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 import { readFileSync, writeFile, writeFileSync, statSync } from "fs";
 import { promisify } from "util";
 import { createHash } from "crypto";
@@ -7,7 +7,7 @@ import { Client, TextChannel } from "discord.js";
 import { getConf, updateConf } from "./conf";
 
 // いるやつ初期化
-const Gclient = new textToSpeech.TextToSpeechClient();
+const Gclient = new TextToSpeechClient();
 const client = new Client();
 
 // config移行
