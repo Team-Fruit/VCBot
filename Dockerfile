@@ -11,10 +11,11 @@ RUN apk add --no-cache --virtual .node-gyp \
 COPY package.json package-lock.json ./
 
 RUN npm i \
-    mkdir mp3
+    mkdir mp3 \
+    npm run build
 
 COPY . ./
 
 RUN apk del .node-gyp
 
-CMD ["node","main.js"]
+CMD ["node","build/main.js"]
