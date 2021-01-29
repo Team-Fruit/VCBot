@@ -14,7 +14,7 @@ RUN npm i \
     mkdir mp3 \
     npm run build
 
-COPY . ./
+COPY ./ ./
 
 RUN apk del .node-gyp
 
