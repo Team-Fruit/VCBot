@@ -8,4 +8,4 @@ services:
     - ./config:/app/config
     - ./mp3:/app/mp3
     environment:
-      GOOGLE_APPLICATION_CREDENTIALS: /app/gtoken.json
+      GOOGLE_APPLICATION_CREDENTIALS: /app/config/gtoken.json
