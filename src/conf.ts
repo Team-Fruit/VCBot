@@ -13,7 +13,7 @@ export function getConf(prop_name: string) {
   return prop_entry;
 }
 
-export function updateConf(prop_name: string, data: any, index: any = 1) {
+export function updateConf(prop_name: string, data: any, index: number = 1) {
   // if (!index) index = 1
   let prop_domain = prop_name.split(".");
   let prop_entry = conf;

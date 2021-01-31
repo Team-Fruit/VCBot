@@ -13,7 +13,7 @@ const client = new Client();
 // config移行
 
 // トークンをconfigから読み込み
-const token = getConf("token");
+const token:string = getConf("token");
 
 let replaceWords: any = {};
 try {
@@ -405,10 +405,6 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
       // 3. 同じチャンネルに出入りしていない事
       if (
         !newMember.member!.user.bot &&
-        !(
-          newMember.channelID !== connection.channel.id &&
-          oldMember.channelID !== connection.channel.id
-        ) &&
         newMember.channelID !== oldMember.channelID
       ) {
         // DisplayName(ニックネームを取得)
@@ -463,62 +459,62 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
         }
 
         // Guildを跨いだ再生とロギング
-        for (const eachConnection of client
-          .voice!.connections.filter(
-            (targetConnection) =>
-              oldMember.channelID === targetConnection.channel.id ||
-              newMember.channelID === targetConnection.channel.id
+        const targetConnection = client.voice!.connections.filter(
+            (c) =>
+              oldMember.channelID === c.channel.id ||
+              newMember.channelID === c.channel.id
           )
-          .array()) {
-          // 音声を再生
-          const dispatcher = eachConnection.play("./mp3/" + hashobj + ".mp3");
-          // 再生が終わったら
-          dispatcher.on("speaking", (value) => {
-            if (!value) {
-              if (
-                (oldMember.channelID === null ||
-                  typeof oldMember.channelID === "undefined" ||
-                  oldMember.channelID !== eachConnection.channel.id) &&
-                newMember.channelID === eachConnection.channel.id
-              ) {
-                // ログを表示
-                if (getConf("guilds." + newMember.guild.id + ".logChannelId")) {
-                  (<TextChannel>(
-                    client.channels.cache.get(
-                      getConf("guilds." + newMember.guild.id + ".logChannelId")
-                    )
-                  )).send(
-                    escapeDecorationSymbol(
-                      newMember.member!.displayName
-                    ).replace(/@/g, "＠") + " joined"
-                  );
-                }
-                // ジョインド
-                eachConnection.play("./joined.mp3");
-              } else if (
-                oldMember.channelID === eachConnection.channel.id &&
-                (newMember.channelID === null ||
-                  typeof newMember.channelID === "undefined" ||
-                  newMember.channelID !== eachConnection.channel.id)
-              ) {
-                // ログ
-                if (getConf("guilds." + oldMember.guild.id + ".logChannelId")) {
-                  (<TextChannel>(
-                    client.channels.cache.get(
-                      getConf("guilds." + oldMember.guild.id + ".logChannelId")
-                    )
-                  )).send(
-                    escapeDecorationSymbol(
-                      newMember.member!.displayName
-                    ).replace(/@/g, "＠") + " left"
-                  );
-                }
-                // リーブド(教訓。NEVER FIX THIS)
-                eachConnection.play("./leaved.mp3");
+          .first() 
+          
+        // 音声を再生
+        const dispatcher = targetConnection!.play("./mp3/" + hashobj + ".mp3");
+        // 再生が終わったら
+        dispatcher.on("speaking", (value) => {
+          if (!value) {
+            if (
+              (oldMember.channelID === null ||
+                typeof oldMember.channelID === "undefined" ||
+                oldMember.channelID !== targetConnection!.channel.id) &&
+              newMember.channelID === targetConnection!.channel.id
+            ) {
+              // ログを表示
+              if (getConf("guilds." + newMember.guild.id + ".logChannelId")) {
+                (<TextChannel>(
+                  client.channels.cache.get(
+                    getConf("guilds." + newMember.guild.id + ".logChannelId")
+                  )
+                )).send(
+                  escapeDecorationSymbol(
+                    newMember.member!.displayName
+                  ).replace(/@/g, "＠") + " joined"
+                );
               }
+              // ジョインド
+              targetConnection!.play("./joined.mp3");
+            } else if (
+              oldMember.channelID === targetConnection!.channel.id &&
+              (newMember.channelID === null ||
+                typeof newMember.channelID === "undefined" ||
+                newMember.channelID !== targetConnection!.channel.id)
+            ) {
+              // ログ
+              if (getConf("guilds." + oldMember.guild.id + ".logChannelId")) {
+                (<TextChannel>(
+                  client.channels.cache.get(
+                    getConf("guilds." + oldMember.guild.id + ".logChannelId")
+                  )
+                )).send(
+                  escapeDecorationSymbol(
+                    newMember.member!.displayName
+                  ).replace(/@/g, "＠") + " left"
+                );
+              }
+              // リーブド(教訓。NEVER FIX THIS)
+              targetConnection!.play("./leaved.mp3");
             }
-          });
-        }
+          }
+        });
+        
       }
     }
   } catch (e) {
