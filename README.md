@@ -2,7 +2,7 @@
 
 ### production
 
-1. gcloud のトークンの json を `./gtoken.json` にしておいてください
+1. gcloud のトークンの json を `./config/gtoken.json` にしておいてください
 2. discord の API トークンを `./config/config.json` にかきこんでください
 3. `docker-compose build`
 4. `docker-compose up -d`
