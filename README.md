@@ -12,6 +12,7 @@
 
 1. configディレクトリの`config.json.template`を`config.json`にして Discord のトークンを書き込んでください
 2. Google Text to Speech のトークンをそこら辺に保存して
-   windows:`$env:GOOGLE_APPLICATION_CREDENTIALS="/your/path/to/gtoken.json"` してください
+   - windows:`$env:GOOGLE_APPLICATION_CREDENTIALS="/your/path/to/gtoken.json"` してください
+   - linux:`export GOOGLE_APPLICATION_CREDENTIALS="/your/path/to/gtoken.json"` してください
 3. `node main.js`
    おわり
