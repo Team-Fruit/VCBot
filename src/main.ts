@@ -4,7 +4,7 @@ import { readFileSync, writeFile, writeFileSync, statSync } from "fs";
 import { promisify } from "util";
 import { createHash } from "crypto";
 import { Client, TextChannel } from "discord.js";
-import { getConf, updateConf } from "./conf";
+import { getConf, updateConf } from "./conf.js";
 
 // いるやつ初期化
 const Gclient = new TextToSpeechClient();
