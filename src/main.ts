@@ -3,8 +3,9 @@ import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 import { readFileSync, writeFile, writeFileSync, statSync } from "fs";
 import { promisify } from "util";
 import { createHash } from "crypto";
-import { Client, TextChannel } from "discord.js";
+import { Client, TextChannel, VoiceConnection } from "discord.js";
 import { getConf, updateConf } from "./conf";
+import { google } from "@google-cloud/text-to-speech/build/protos/protos";
 
 // いるやつ初期化
 const Gclient = new TextToSpeechClient();
@@ -13,9 +14,9 @@ const client = new Client();
 // config移行
 
 // トークンをconfigから読み込み
-const token = getConf("token");
+const token: string = getConf("token");
 
-let replaceWords: any = {};
+let replaceWords: {[target: string]: string} = {};
 try {
   //文字の読み替え一覧をjsonから読み込み
   replaceWords = JSON.parse(readFileSync("replaceWords.json", "utf8"));
@@ -24,17 +25,17 @@ try {
 }
 
 //リストを表示するときに :を揃えたかった関数
-function spacePadding(val: any) {
+function spacePadding(val: string) {
   let len: number = 0;
-  let i: any = "";
-  let ii: any = "";
+  let i: string = "";
+  let ii: string = "";
 
   // 置換対象で一番長い文字列を検索
   // 置換対象リストから一つずつ検索
   for (i in replaceWords) {
     // それぞれのバイト数をtempLenに格納
-    let tempLen: any = i.length;
-    for (ii in i) {
+    let tempLen: number = i.length;
+    for (ii in i.split("")) {
       // eslint-disable-next-line no-control-regex
       if (i[ii].match(/[^\x01-\x7E]/)) tempLen++;
     }
@@ -46,7 +47,7 @@ function spacePadding(val: any) {
 
   console.log(len);
 
-  for (i in val) {
+  for (i in val.split("")) {
     //2バイト文字を検索してそのぶん空白を削る
     // eslint-disable-next-line no-control-regex
     if (val[i].match(/[^\x01-\x7E]/g)) len--;
@@ -60,7 +61,7 @@ function spacePadding(val: any) {
 
 let re;
 // 装飾文字を出力するときに書式が崩れないようにする関数
-function escapeDecorationSymbol(val: any) {
+function escapeDecorationSymbol(val: string) {
   // eslint-disable-next-line
   re = new RegExp(/([\*_~`\|/])/g);
 
@@ -73,7 +74,7 @@ function escapeDecorationSymbol(val: any) {
 }
 
 // 正規表現の記号をよけるための関数
-function escape(val: any) {
+function escape(val: string) {
   // eslint-disable-next-line
   re = new RegExp(/([\*\|\^\.\+\?\|\\\[\]\(\)\{\}])/g);
 
@@ -84,13 +85,13 @@ function escape(val: any) {
 }
 
 // JSON.stringifyから""を取るための関数
-function searchJSON(val: any) {
+function searchJSON(val: string) {
   // eslint-disable-next-line
   val = JSON.stringify(val).replace(/\"/g, "");
   return val;
 }
 
-let connection: any;
+let connection: VoiceConnection;
 
 // Discord Botの準備ができたら発火
 client.on("ready", () => {
@@ -405,10 +406,6 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
       // 3. 同じチャンネルに出入りしていない事
       if (
         !newMember.member!.user.bot &&
-        !(
-          newMember.channelID !== connection.channel.id &&
-          oldMember.channelID !== connection.channel.id
-        ) &&
         newMember.channelID !== oldMember.channelID
       ) {
         // DisplayName(ニックネームを取得)
@@ -421,7 +418,7 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
         }
 
         // Google Text to Speechに渡すリクエストをあらかじめ生成
-        const request: any = {
+        const request: google.cloud.texttospeech.v1.ISynthesizeSpeechRequest = {
           input: { text: dn },
           voice: {
             name: "ja-JP-Standard-A",
@@ -463,62 +460,62 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
         }
 
         // Guildを跨いだ再生とロギング
-        for (const eachConnection of client
-          .voice!.connections.filter(
-            (targetConnection) =>
-              oldMember.channelID === targetConnection.channel.id ||
-              newMember.channelID === targetConnection.channel.id
+        const targetConnection = client.voice!.connections.filter(
+            (c) =>
+              oldMember.channelID === c.channel.id ||
+              newMember.channelID === c.channel.id
           )
-          .array()) {
-          // 音声を再生
-          const dispatcher = eachConnection.play("./mp3/" + hashobj + ".mp3");
-          // 再生が終わったら
-          dispatcher.on("speaking", (value) => {
-            if (!value) {
-              if (
-                (oldMember.channelID === null ||
-                  typeof oldMember.channelID === "undefined" ||
-                  oldMember.channelID !== eachConnection.channel.id) &&
-                newMember.channelID === eachConnection.channel.id
-              ) {
-                // ログを表示
-                if (getConf("guilds." + newMember.guild.id + ".logChannelId")) {
-                  (<TextChannel>(
-                    client.channels.cache.get(
-                      getConf("guilds." + newMember.guild.id + ".logChannelId")
-                    )
-                  )).send(
-                    escapeDecorationSymbol(
-                      newMember.member!.displayName
-                    ).replace(/@/g, "＠") + " joined"
-                  );
-                }
-                // ジョインド
-                eachConnection.play("./joined.mp3");
-              } else if (
-                oldMember.channelID === eachConnection.channel.id &&
-                (newMember.channelID === null ||
-                  typeof newMember.channelID === "undefined" ||
-                  newMember.channelID !== eachConnection.channel.id)
-              ) {
-                // ログ
-                if (getConf("guilds." + oldMember.guild.id + ".logChannelId")) {
-                  (<TextChannel>(
-                    client.channels.cache.get(
-                      getConf("guilds." + oldMember.guild.id + ".logChannelId")
-                    )
-                  )).send(
-                    escapeDecorationSymbol(
-                      newMember.member!.displayName
-                    ).replace(/@/g, "＠") + " left"
-                  );
-                }
-                // リーブド(教訓。NEVER FIX THIS)
-                eachConnection.play("./leaved.mp3");
+          .first() 
+          
+        // 音声を再生
+        const dispatcher = targetConnection!.play("./mp3/" + hashobj + ".mp3");
+        // 再生が終わったら
+        dispatcher.on("speaking", (value) => {
+          if (!value) {
+            if (
+              (oldMember.channelID === null ||
+                typeof oldMember.channelID === "undefined" ||
+                oldMember.channelID !== targetConnection!.channel.id) &&
+              newMember.channelID === targetConnection!.channel.id
+            ) {
+              // ログを表示
+              if (getConf("guilds." + newMember.guild.id + ".logChannelId")) {
+                (<TextChannel>(
+                  client.channels.cache.get(
+                    getConf("guilds." + newMember.guild.id + ".logChannelId")
+                  )
+                )).send(
+                  escapeDecorationSymbol(
+                    newMember.member!.displayName
+                  ).replace(/@/g, "＠") + " joined"
+                );
               }
+              // ジョインド
+              targetConnection!.play("./joined.mp3");
+            } else if (
+              oldMember.channelID === targetConnection!.channel.id &&
+              (newMember.channelID === null ||
+                typeof newMember.channelID === "undefined" ||
+                newMember.channelID !== targetConnection!.channel.id)
+            ) {
+              // ログ
+              if (getConf("guilds." + oldMember.guild.id + ".logChannelId")) {
+                (<TextChannel>(
+                  client.channels.cache.get(
+                    getConf("guilds." + oldMember.guild.id + ".logChannelId")
+                  )
+                )).send(
+                  escapeDecorationSymbol(
+                    newMember.member!.displayName
+                  ).replace(/@/g, "＠") + " left"
+                );
+              }
+              // リーブド(教訓。NEVER FIX THIS)
+              targetConnection!.play("./leaved.mp3");
             }
-          });
-        }
+          }
+        });
+        
       }
     }
   } catch (e) {
