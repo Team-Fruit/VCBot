@@ -9,6 +9,7 @@
   },
   "author": "",
   "license": "MIT",
+  "type": "module",
   "dependencies": {
     "@discordjs/opus": "^0.3.3",
     "@google-cloud/text-to-speech": "^3.1.3",
