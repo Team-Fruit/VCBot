@@ -1,8 +1,9 @@
-FROM node:lts-alpine3.12
+FROM node:current-alpine3.14
 
 WORKDIR /app
 
 RUN apk add --no-cache --virtual .node-gyp \
+    git \
     g++ \
     gcc \
     make \
