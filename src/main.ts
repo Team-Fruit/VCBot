@@ -17,7 +17,6 @@ import {
   Snowflake,
 } from "discord.js";
 import {
-  VoiceConnection,
   joinVoiceChannel,
   JoinVoiceChannelOptions,
   CreateVoiceConnectionOptions,
@@ -89,7 +88,7 @@ function spacePadding(val: string) {
   return val.substr(0, len);
 }
 
-let re;
+let re: RegExp;
 // 装飾文字を出力するときに書式が崩れないようにする関数
 function escapeDecorationSymbol(val: string) {
   re = new RegExp(/([\*_~`\|/])/g);
@@ -138,7 +137,7 @@ client.on("messageCreate", (message) => {
       .split(/ +/);
 
     const arrayLength = args.length;
-    let inputWord = "";
+    let inputWord: string = "";
     try {
       // argsの先頭を削除してそれ以外を連結して返す
       inputWord = args.slice(1, arrayLength).join(" ");
@@ -570,6 +569,7 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
           console.log("w,what happend...??");
         } else {
           targetSubscriptions[0]?.enqueue("./mp3/" + hashobj + ".mp3");
+          // leaved.mp3: リーブド(教訓。NEVER FIX THIS)
           targetSubscriptions[0]?.enqueue(isJoin ? "joined.mp3" : "leaved.mp3");
           // ログを表示
           if (

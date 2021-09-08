@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync } from "fs";
 
 // Configヨミヨミ
-let conf = JSON.parse(readFileSync("./config/config.json", "utf8"));
+// TODO: 型どうにかしたい(JSON.parseはanyを返す)
+let conf: any = JSON.parse(readFileSync("./config/config.json", "utf8"));
 
 export function getConf(prop_name: string) {
   let prop_domain = prop_name.split(".");
@@ -13,8 +14,8 @@ export function getConf(prop_name: string) {
   return prop_entry;
 }
 
-export function updateConf(prop_name: string, data: any, index: number = 1) {
-  // if (!index) index = 1
+export function updateConf(prop_name: string, data: string, index?: number) {
+  if (!index) index = 1;
   let prop_domain = prop_name.split(".");
   let prop_entry = conf;
   for (let i = 0; i < prop_domain.length - index; i++) {
