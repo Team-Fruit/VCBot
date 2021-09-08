@@ -7,7 +7,10 @@ import {
   AudioResource,
   createAudioPlayer,
   createAudioResource,
+  CreateVoiceConnectionOptions,
   entersState,
+  joinVoiceChannel,
+  JoinVoiceChannelOptions,
   VoiceConnection,
   VoiceConnectionDisconnectReason,
   VoiceConnectionStatus,
@@ -21,8 +24,8 @@ const wait = promisify(setTimeout);
  * and it also attaches logic to the audio player and voice connection for error handling and reconnection logic.
  */
 export class ChainSubscription {
-  public readonly voiceConnection: VoiceConnection;
   public readonly audioPlayer: AudioPlayer;
+  public voiceConnection: VoiceConnection;
   public queue: AudioResource[];
   public queueLock = false;
   public readyLock = false;
@@ -44,7 +47,7 @@ export class ChainSubscription {
 						switching voice channels. This is also the same code for the bot being kicked from the voice channel,
 						so we allow 5 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
 						the voice connection.
-					*/
+            */
           try {
             await entersState(
               this.voiceConnection,
@@ -58,20 +61,20 @@ export class ChainSubscription {
           }
         } else if (this.voiceConnection.rejoinAttempts < 5) {
           /*
-						The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
-					*/
+              The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
+              */
           await wait((this.voiceConnection.rejoinAttempts + 1) * 5_000);
           this.voiceConnection.rejoin();
         } else {
           /*
-						The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
-					*/
+              The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
+              */
           this.voiceConnection.destroy();
         }
       } else if (newState.status === VoiceConnectionStatus.Destroyed) {
         /*
-					Once destroyed, stop the subscription
-				*/
+            Once destroyed, stop the subscription
+            */
         this.stop();
       } else if (
         !this.readyLock &&
@@ -79,10 +82,10 @@ export class ChainSubscription {
           newState.status === VoiceConnectionStatus.Signalling)
       ) {
         /*
-					In the Signalling or Connecting states, we set a 20 second time limit for the connection to become ready
-					before destroying the voice connection. This stops the voice connection permanently existing in one of these
-					states.
-				*/
+                In the Signalling or Connecting states, we set a 20 second time limit for the connection to become ready
+                before destroying the voice connection. This stops the voice connection permanently existing in one of these
+                states.
+                */
         this.readyLock = true;
         try {
           await entersState(
@@ -140,6 +143,74 @@ export class ChainSubscription {
     this.queueLock = true;
     this.queue = [];
     this.audioPlayer.stop(true);
+  }
+
+  /**
+   * Reattaches eventlistener
+   */
+  private reattachEventListener() {
+    this.voiceConnection.removeAllListeners().on("stateChange", async (_, newState) => {
+      if (newState.status === VoiceConnectionStatus.Disconnected) {
+        if (
+          newState.reason === VoiceConnectionDisconnectReason.WebSocketClose &&
+          newState.closeCode === 4014
+        ) {
+          try {
+            await entersState(
+              this.voiceConnection,
+              VoiceConnectionStatus.Connecting,
+              5_000
+            );
+          } catch {
+            this.voiceConnection.destroy();
+          }
+        } else if (this.voiceConnection.rejoinAttempts < 5) {
+          await wait((this.voiceConnection.rejoinAttempts + 1) * 5_000);
+          this.voiceConnection.rejoin();
+        } else {
+          this.voiceConnection.destroy();
+        }
+      } else if (newState.status === VoiceConnectionStatus.Destroyed) {
+        this.stop();
+      } else if (
+        !this.readyLock &&
+        (newState.status === VoiceConnectionStatus.Connecting ||
+          newState.status === VoiceConnectionStatus.Signalling)
+      ) {
+        this.readyLock = true;
+        try {
+          await entersState(
+            this.voiceConnection,
+            VoiceConnectionStatus.Ready,
+            20_000
+          );
+        } catch {
+          if (
+            this.voiceConnection.state.status !==
+            VoiceConnectionStatus.Destroyed
+          )
+            this.voiceConnection.destroy();
+        } finally {
+          this.readyLock = false;
+        }
+      }
+    });
+  }
+
+  /**
+   * Renews VoiceConnection
+   *
+   * @param voiceConnection new VoiceConnection
+   */
+  public renewVoiceConnection(
+    joinOpts: JoinVoiceChannelOptions & CreateVoiceConnectionOptions
+  ) {
+    this.stop();
+    this.voiceConnection.destroy();
+    this.voiceConnection = joinVoiceChannel(joinOpts);
+    this.reattachEventListener();
+    this.voiceConnection.subscribe(this.audioPlayer);
+    this.queueLock = false;
   }
 
   /**

@@ -408,24 +408,30 @@ client.on("messageCreate", (message) => {
   }
   // メッセージにBotへのメンションが含まれている かつ 送信者がサーバーVCにいるとき
   if (message.mentions.has(client.user!) && message.member?.voice.channel) {
-    // 既に接続してますか？
+    let channelOpts: JoinVoiceChannelOptions & CreateVoiceConnectionOptions = {
+      channelId: message.member!.voice.channelId!,
+      guildId: message.guildId!,
+      selfDeaf: true,
+      adapterCreator: message.guild!.voiceAdapterCreator,
+    };
+    // 既に同じGuildに接続してますか？
     if (getVoiceConnection(message.guildId!)) {
+      // それ違うチャンネルだったりする？
+      if (
+        getVoiceConnection(message.guildId!)?.joinConfig.channelId !==
+        message.member.voice.channelId
+      ) {
+        subscStore.get(message.guildId!)?.renewVoiceConnection(channelOpts);
+      }
       // じゃけん再接続してくださいね～
-      getVoiceConnection(message.guildId!)!.rejoin();
+      else getVoiceConnection(message.guildId!)!.rejoin();
     } else {
       // Botを接続させる
-      let channelOpts: JoinVoiceChannelOptions & CreateVoiceConnectionOptions =
-        {
-          channelId: message.member!.voice.channelId!,
-          guildId: message.guildId!,
-          selfDeaf: true,
-          adapterCreator: message.guild!.voiceAdapterCreator,
-        };
       joinVoiceChannel(channelOpts);
       console.log(
         `Attempting to join '${message.member!.voice.channelId!}'(${
           message.member!.voice.channel!.name
-        }) Voice/StageChannel...`
+        }) VoiceChannel...`
       );
 
       // Wait for ready, Prepair AudioPlayer and Play Greeting.
