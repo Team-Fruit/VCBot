@@ -55,7 +55,6 @@ function spacePadding(val: string) {
     // それぞれのバイト数をtempLenに格納
     let tempLen: number = i.length;
     for (ii in i.split("")) {
-      // eslint-disable-next-line no-control-regex
       if (i[ii].match(/[^\x01-\x7E]/)) tempLen++;
     }
     // 一番大きいバイト数を記録
@@ -68,7 +67,6 @@ function spacePadding(val: string) {
 
   for (i in val.split("")) {
     //2バイト文字を検索してそのぶん空白を削る
-    // eslint-disable-next-line no-control-regex
     if (val[i].match(/[^\x01-\x7E]/g)) len--;
   }
 
@@ -81,11 +79,9 @@ function spacePadding(val: string) {
 let re;
 // 装飾文字を出力するときに書式が崩れないようにする関数
 function escapeDecorationSymbol(val: string) {
-  // eslint-disable-next-line
   re = new RegExp(/([\*_~`\|/])/g);
 
   //装飾文字があったときはゼロ幅スペースを入れる
-  // eslint-disable-next-line
   // if (val.match(re)) val = val.replace(re,"\\$1​")
   if (val.match(re)) val = val.replace(re, "​$1");
 
@@ -94,7 +90,6 @@ function escapeDecorationSymbol(val: string) {
 
 // 正規表現の記号をよけるための関数
 function escape(val: string) {
-  // eslint-disable-next-line
   re = new RegExp(/([\*\|\^\.\+\?\|\\\[\]\(\)\{\}])/g);
 
   //記号があったときはバックスラッシュを入れる
@@ -105,7 +100,6 @@ function escape(val: string) {
 
 // JSON.stringifyから""を取るための関数
 function searchJSON(val: string) {
-  // eslint-disable-next-line
   val = JSON.stringify(val).replace(/\"/g, "");
   return val;
 }
@@ -125,8 +119,7 @@ client.on("messageCreate", (message) => {
 
   console.log(message.content);
   if (message.content.startsWith("/vcbot")) {
-    // eslint-disable-next-line
-    const args = message.content
+    const args: string[] = message.content
       .replace(/　+/g, " ")
       .slice(6)
       .trim()
@@ -184,10 +177,8 @@ client.on("messageCreate", (message) => {
                     prop_contexts[0] = "guilds." + message.guild!.id;
                     switch (prop_contexts[1]) {
                       case "logChannelId":
-                        // eslint-disable-next-line no-case-declarations
                         const guild_logChannelId_help =
                           "設定項目の説明:VCBotが居るボイスチャットチャンネルでのユーザーの出入りを記録するテキストチャットチャンネルをIDで指定します\n";
-                        // eslint-disable-next-line no-case-declarations
                         let prop_ctx = prop_contexts.join(".");
                         if (!getConf(prop_ctx)) {
                           message.reply(
@@ -251,7 +242,6 @@ client.on("messageCreate", (message) => {
                           // if (message.deletable) message.delete();
                           break;
                         }
-                        // eslint-disable-next-line no-case-declarations
                         let prop_ctx = prop_contexts.join(".");
                         updateConf(prop_ctx, args[3]);
                         message.reply(
@@ -302,9 +292,7 @@ client.on("messageCreate", (message) => {
         // 読み替える文字とその読みがあるかをチェック
         if (arrayLength >= 3) {
           // リストが崩れる・deleteコマンドで消せない原因になるので一部の記号をはじく
-          // eslint-disable-next-line
           if (inputWord.match(/([`\\\*])/g)) {
-            // eslint-disable-next-line
             message.reply({content: "` \\ ' の記号はつかえません"});
             // if (message.deletable) message.delete();
           } else {
@@ -359,10 +347,8 @@ client.on("messageCreate", (message) => {
         }
         break;
       case "list":
-        // eslint-disable-next-line
-        let mesBody;
-        // eslint-disable-next-line
-        let i;
+        let mesBody: string | undefined;
+        let i: string;
         // リストの中身を組み立てる
         for (i in replaceWords) {
           mesBody =
