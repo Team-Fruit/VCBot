@@ -14,8 +14,7 @@ export function getConf(prop_name: string) {
   return prop_entry;
 }
 
-export function updateConf(prop_name: string, data: string, index?: number) {
-  if (!index) index = 1;
+export function updateConf(prop_name: string, data: string, index?: number = 1) {
   let prop_domain = prop_name.split(".");
   let prop_entry = conf;
   for (let i = 0; i < prop_domain.length - index; i++) {
